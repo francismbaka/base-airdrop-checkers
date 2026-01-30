@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base Airdrop Checker</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0052FF 0%, #0041CC 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      color: #0052FF;
+      margin-bottom: 10px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #0052FF;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background: #0052FF;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #0041CC;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    #result {
+      margin-top: 30px;
+      display: none;
+    }
+
+    .result-card {
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .allocation {
+      background: linear-gradient(135deg, #0052FF 0%, #0041CC 100%);
+      color: white;
+      text-align: center;
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+    }
+
+    .allocation h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .allocation .amount {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .stat-item {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #e0e0e0;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      color: #0052FF;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .error {
+      background: #fee;
+      border: 2px solid #fcc;
+      color: #c33;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0052FF;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Base Airdrop Checker</h1>
+    <p class="subtitle">Check your estimated airdrop allocation based on Base network activity</p>
+
+    <div class="input-group">
+      <label for="walletAddress">Wallet Address</label>
+      <input 
+        type="text" 
+        id="walletAddress" 
+        placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+      />
+    </div>
+
+    <button onclick="checkAirdrop()" id="checkButton">Check Allocation</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function checkAirdrop() {
+      const address = document.getElementById('walletAddress').value.trim();
+      const resultDiv = document.getElementById('result');
+      const button = document.getElementById('checkButton');
+
+      resultDiv.style.display = 'none';
+      resultDiv.innerHTML = '';
+
+      if (!address) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<div class="error">Please enter a wallet address</div>';
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Checking...';
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Fetching your Base activity...</p>
+        </div>
+      `;
+
+      try {
+        const API_URL = '/api/check-wallet';
+        
+        const response = await fetch(`${API_URL}?address=${address}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch data');
+        }
+
+        resultDiv.innerHTML = `
+          <div class="allocation">
+            <h2>Your Estimated Allocation</h2>
+            <div class="amount">${data.allocation.tokens}</div>
+            <p>BASE tokens</p>
+            <p style="font-size: 14px; margin-top: 10px;">Points: ${data.allocation.points}</p>
+          </div>
+
+          <div class="result-card">
+            <h3 style="margin-bottom: 15px; color: #333;">Activity Summary</h3>
+            <p style="color: #666;">${data.summary}</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">Total Transactions</div>
+              <div class="stat-value">${data.stats.totalTransactions}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Days Active</div>
+              <div class="stat-value">${data.stats.daysActive}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">ETH Volume</div>
+              <div class="stat-value">${data.stats.ethVolume}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">USDC Volume</div>
+              <div class="stat-value">${data.stats.usdcVolume}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Contracts Deployed</div>
+              <div class="stat-value">${data.stats.contractsDeployed}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">ETH Transactions</div>
+              <div class="stat-value">${data.stats.ethTransactions}</div>
+            </div>
+          </div>
+        `;
+
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="error">
+            <strong>Error:</strong> ${error.message}
+          </div>
+        `;
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Check Allocation';
+      }
+    }
+
+    document.getElementById('walletAddress').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        checkAirdrop();
+      }
+    });
+  </script>
+</body>
+</html>
