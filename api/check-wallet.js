@@ -26,27 +26,23 @@ export default async function handler(req, res) {
     });
   }
 
+  // Using API V2 endpoint
   const API_KEY = 'JHPSPADURZKEPAUJMAPSS2P2VV38ITP9Z2';
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+  const BASE_URL = 'https://api.basescan.org/v2/api';
 
   try {
-    // Fetch ETH transactions
-    const ethRes = await fetch(`https://api.basescan.org/api?module=account&action=txlist&address=${address}&sort=asc&apikey=${API_KEY}`);
+    // Fetch ETH transactions using V2 API
+    const ethUrl = `${BASE_URL}?chainid=8453&module=account&action=txlist&address=${address}&sort=asc&apikey=${API_KEY}`;
+    const ethRes = await fetch(ethUrl);
     const ethData = await ethRes.json();
 
-    console.log('BaseScan Response:', ethData);
+    console.log('BaseScan V2 Response:', ethData);
 
     // Check for API errors
-    if (ethData.status === "0" && ethData.message === "NOTOK") {
-      return res.status(400).json({ 
-        error: "BaseScan API error: " + (ethData.result || "Unknown error"),
-        hint: "The API key may have hit rate limits. Try again in a few minutes."
-      });
-    }
-
-    if (ethData.status !== "1") {
+    if (ethData.status === "0") {
       // No transactions found is OK
-      if (ethData.message === "No transactions found") {
+      if (ethData.message === "No transactions found" || ethData.result === "No transactions found") {
         return res.status(200).json({
           address: address,
           stats: {
@@ -67,16 +63,18 @@ export default async function handler(req, res) {
       }
       
       return res.status(400).json({ 
-        error: ethData.message || "Could not fetch data from BaseScan"
+        error: ethData.message || "Could not fetch data from BaseScan",
+        result: ethData.result
       });
     }
 
-    // Fetch USDC transactions
-    const usdcRes = await fetch(`https://api.basescan.org/api?module=account&action=tokentx&contractaddress=${USDC_CONTRACT}&address=${address}&sort=asc&apikey=${API_KEY}`);
+    // Fetch USDC transactions using V2 API
+    const usdcUrl = `${BASE_URL}?chainid=8453&module=account&action=tokentx&contractaddress=${USDC_CONTRACT}&address=${address}&sort=asc&apikey=${API_KEY}`;
+    const usdcRes = await fetch(usdcUrl);
     const usdcData = await usdcRes.json();
 
-    const ethTxs = ethData.result || [];
-    const usdcTxs = (usdcData.status === "1" ? usdcData.result : []) || [];
+    const ethTxs = (ethData.status === "1" && Array.isArray(ethData.result)) ? ethData.result : [];
+    const usdcTxs = (usdcData.status === "1" && Array.isArray(usdcData.result)) ? usdcData.result : [];
     const totalTxCount = ethTxs.length + usdcTxs.length;
     
     const ethVolume = ethTxs.reduce((sum, tx) => sum + (Number(tx.value) / 1e18), 0);
@@ -123,3 +121,28 @@ export default async function handler(req, res) {
     });
   }
 }
+```
+
+5. **Click "Commit changes"**
+
+---
+
+## ✅ What Changed?
+
+1. ✅ Using **API V2 endpoint**: `https://api.basescan.org/v2/api`
+2. ✅ Added **`chainid=8453`** parameter (Base chain ID)
+3. ✅ Better error handling for "no transactions"
+4. ✅ Auto-adds "0x" prefix if missing
+
+---
+
+## 🧪 Test After Deploy
+
+Wait 30-60 seconds for Vercel to redeploy, then test with:
+```
+0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+```
+
+or
+```
+0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
