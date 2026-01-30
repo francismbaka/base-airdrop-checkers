@@ -1,5 +1,5 @@
 {
-  "name": "base-airdrop-checker",
+  "name": "base-airdrop-checkers",
   "version": "1.0.0",
   "description": "Check your Base network airdrop allocation",
   "type": "module"
